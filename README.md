@@ -35,7 +35,7 @@ server {
 ```
 
 To install:
-Clone this repo `https://github.com/t2vee/opengist`  
+Clone this repo `https://github.com/t2vee/opengist-subpath-support`  
 Use this docker-compose.yml file:  
 ```
 version: "3"
