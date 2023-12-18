@@ -7,14 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+declare var BASE_URL: string;
+
 const setSetting = (key: string, value: string) => {
+    const baseUrl = BASE_URL || ''; // Fallback to empty string if BASE_URL is not set
     const data = new URLSearchParams();
     data.append('key', key);
     data.append('value', value);
     if (document.getElementsByName('_csrf').length !== 0) {
         data.append('_csrf', ((document.getElementsByName('_csrf')[0] as HTMLInputElement).value));
     }
-    return fetch('/admin-panel/set-config', {
+    return fetch(`${baseUrl}/admin-panel/set-config`, {
         method: 'PUT',
         credentials: 'same-origin',
         body: data,
