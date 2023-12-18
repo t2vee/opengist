@@ -2,110 +2,60 @@
 
 <img height="108px" src="https://raw.githubusercontent.com/thomiceli/opengist/a9dd531f676d01b93bb6bd70751a69382ca563b0/public/opengist.svg" alt="Opengist" align="right" />
 
-Opengist is a **self-hosted** pastebin **powered by Git**. All snippets are stored in a Git repository and can be
-read and/or modified using standard Git commands, or with the web interface.
-It is similiar to [GitHub Gist](https://gist.github.com/), but open-source and could be self-hosted.
+Opengist but it has support for subpaths. 
+Use this Nginx Config:
+```
+server {
+    listen 443 ssl http2;
+    server_name <domain>;
 
-[Documentation](/docs) • [Demo](https://opengist.thomice.li)
+    ssl_certificate <ssl_pem file>;
+    ssl_certificate_key <ssl_key file>;
 
+    ssl_session_cache shared:SSL:1m;
+    ssl_session_timeout 5m;
 
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/thomiceli/opengist?sort=semver)
-![License](https://img.shields.io/github/license/thomiceli/opengist?color=blue)
-[![Go CI](https://github.com/thomiceli/opengist/actions/workflows/go.yml/badge.svg)](https://github.com/thomiceli/opengist/actions/workflows/go.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/thomiceli/opengist)](https://goreportcard.com/report/github.com/thomiceli/opengist)
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
 
+    location /<YOUR_SUBPATH>/ {
+        rewrite ^/opengist(/.*)$ $1 break;
+        proxy_pass http://127.0.0.1:6157;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Prefix /<YOUR_SUBPATH>;
 
-## Features
-
-* Create public, unlisted or private snippets
-* [Init](/docs/usage/init-via-git.md) / Clone / Pull / Push snippets **via Git** over HTTP or SSH
-* Revisions history
-* Syntax highlighting ; markdown & CSV support
-* Like / Fork snippets
-* Search for snippets ; browse users snippets, likes and forks
-* Download raw files or as a ZIP archive
-* OAuth2 login with GitHub, Gitea, and OpenID Connect
-* Restrict or unrestrict snippets visibility to anonymous users
-* Docker support
-* [More...](/docs/index.md#features)
-
-## Quick start
-
-### With Docker
-
-Docker [images](https://github.com/thomiceli/opengist/pkgs/container/opengist) are available for each release :
-
-```shell
-docker pull ghcr.io/thomiceli/opengist:1
+        sub_filter_once off;
+        sub_filter_types *;
+        sub_filter '</head>' '<base href="/<YOUR_SUBPATH>/"></head>';
+    }
+}
 ```
 
-It can be used in a `docker-compose.yml` file :
-
-1. Create a `docker-compose.yml` file with the following content
-2. Run `docker compose up -d`
-3. Opengist is now running on port 6157, you can browse http://localhost:6157
-
-```yml
+To install:
+Clone this repo `https://github.com/t2vee/opengist`  
+Use this docker-compose.yml file:  
+```
 version: "3"
 
 services:
   opengist:
-    image: ghcr.io/thomiceli/opengist:1
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: opengist
     restart: unless-stopped
     ports:
       - "6157:6157" # HTTP port
-      - "2222:2222" # SSH port, can be removed if you don't use SSH
+      #- "2222:2222" # SSH port, can be removed if you don't use SSH
     volumes:
-      - "$HOME/.opengist:/opengist"
-```
-
-You can define which user/group should run the container and own the files by setting the `UID` and `GID` environment variables :
-
-```yml
-services:
-  opengist:
-    # ...
+      - "./opengist:/opengist"
+      - "./config.yml:/config.yml"
     environment:
-      UID: 1001
-      GID: 1001
+      OG_EXTERNAL_URL: <YOUR_EXTERNAL_URL_WITH_SUBPATH>
 ```
+`sudo docker compose up -d --build --remove-orphans`  
 
-### Via binary
-
-Download the archive for your system from the release page [here](https://github.com/thomiceli/opengist/releases/latest), and extract it.
-
-```shell
-# example for linux amd64
-wget https://github.com/thomiceli/opengist/releases/download/v1.5.2/opengist1.5.2-linux-amd64.tar.gz
-
-tar xzvf opengist1.5.2-linux-amd64.tar.gz
-cd opengist
-chmod +x opengist
-./opengist # with or without `--config config.yml`
-```
-
-Opengist is now running on port 6157, you can browse http://localhost:6157
-
-### From source
-
-Requirements : [Git](https://git-scm.com/downloads) (2.20+), [Go](https://go.dev/doc/install) (1.20+), [Node.js](https://nodejs.org/en/download/) (16+)
-
-```shell
-git clone https://github.com/thomiceli/opengist
-cd opengist
-make
-./opengist
-```
-
-Opengist is now running on port 6157, you can browse http://localhost:6157
-
-
-## Documentation
-
-The documentation is available in [/docs](/docs) directory.
-
-
-## License
-
-Opengist is licensed under the [AGPL-3.0 license](/LICENSE).
+enjoy :3
